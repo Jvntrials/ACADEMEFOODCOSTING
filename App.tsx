@@ -3,12 +3,16 @@ import React, { useState, useEffect } from 'react';
 import { CostingTable } from './components/CostingTable';
 import { MarketList } from './components/MarketList';
 import { Header } from './components/Header';
-import { Ingredient, MarketItem } from './types';
+import { Ingredient, MarketItem, ParsedIngredient } from './types';
 import { getMarketListFromStorage, saveMarketListToStorage } from './services/storageService';
 
 const getConversionFactor = (purchaseUnit: string, recipeUnit: string): number => {
     const pUnit = purchaseUnit.toLowerCase();
     const rUnit = recipeUnit.toLowerCase();
+
+    // Handle cases where AI might output variations of 'piece'
+    const pieceUnits = ['pc', 'pcs', 'piece', 'pieces'];
+    if (pieceUnits.includes(pUnit) && pieceUnits.includes(rUnit)) return 1;
 
     const massUnits = ['kg', 'g'];
     const volumeUnits = ['liter', 'ml'];
@@ -16,7 +20,8 @@ const getConversionFactor = (purchaseUnit: string, recipeUnit: string): number =
     const isMass = massUnits.includes(pUnit) && massUnits.includes(rUnit);
     const isVolume = volumeUnits.includes(pUnit) && volumeUnits.includes(rUnit);
     
-    // If units are not compatible (e.g., kg to ml), or are piece-based, default to 1, user should enter manually.
+    // If units are not compatible (e.g., kg to ml), or are piece-based without a match, default to 1.
+    // The user should enter a manual conversion factor for complex units like 'cup' to 'g'.
     if (!isMass && !isVolume) return 1;
 
     const baseUnits: { [key: string]: number } = {
@@ -95,6 +100,41 @@ function App(): React.ReactNode {
         return updatedIng;
     }));
   };
+  
+  const handleImportedIngredients = (parsedIngredients: ParsedIngredient[]) => {
+    const marketListMap = new Map(marketList.map(item => [item.name.trim().toLowerCase(), item]));
+
+    const newIngredients: Ingredient[] = parsedIngredients.map((pIng, index) => {
+        const name = pIng.name || 'Untitled Ingredient';
+        const unit = (pIng.unit || 'pc').toLowerCase();
+
+        const marketItem = marketListMap.get(name.trim().toLowerCase());
+        
+        // Default to a standard purchase unit if not in market list
+        const purchaseUnit = marketItem?.unit || 'kg';
+        
+        // Normalize common 'piece' units which AI might return
+        const pieceUnits = ['piece', 'pieces', 'pcs.'];
+        const normalizedRecipeUnit = pieceUnits.includes(unit) ? 'pc' : unit;
+
+        return {
+            id: `${new Date().getTime()}-${index}`, // Create a robust unique ID
+            name: name,
+            quantity: pIng.quantity || 1,
+            unit: normalizedRecipeUnit,
+            purchasePrice: marketItem?.price || 0,
+            purchaseUnit: purchaseUnit,
+            conversionFactor: getConversionFactor(purchaseUnit, normalizedRecipeUnit),
+        };
+    });
+
+    if (newIngredients.length > 0) {
+        setIngredients(newIngredients);
+    } else {
+        console.warn("AI parsing resulted in an empty ingredient list.");
+        // Optionally, add a user-facing notification here
+    }
+  };
 
   const addIngredient = () => {
     const newIngredient: Ingredient = {
@@ -171,6 +211,7 @@ function App(): React.ReactNode {
                 onAddIngredientFromMarket={addIngredientFromMarket}
                 recipeYield={recipeYield}
                 onRecipeYieldChange={setRecipeYield}
+                onImportIngredients={handleImportedIngredients}
             />
           </div>
           <div className="lg:w-1/3 no-print">
