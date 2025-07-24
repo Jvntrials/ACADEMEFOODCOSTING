@@ -1,5 +1,5 @@
 
-import { MarketItem } from '../types';
+import { MarketItem } from '../types.ts';
 
 const MARKET_LIST_KEY = 'foodCostingMarketList';
 
