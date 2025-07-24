@@ -1,6 +1,6 @@
 import React, { useRef, useState } from 'react';
-import { MarketItem } from '../types';
-import { AddIcon, DragHandleIcon, MarketIcon, TrashIcon } from './Icons';
+import { MarketItem } from '../types.ts';
+import { AddIcon, DragHandleIcon, MarketIcon, TrashIcon } from './Icons.tsx';
 
 interface MarketListProps {
   marketList: MarketItem[];
