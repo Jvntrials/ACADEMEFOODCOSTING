@@ -15,3 +15,10 @@ export interface MarketItem {
   price: number;
   unit: string;
 }
+
+// Defines the structure for an ingredient parsed from text by the AI model.
+export interface ParsedIngredient {
+  name: string;
+  quantity: number;
+  unit: string;
+}
