@@ -1,10 +1,10 @@
 import React, { useState, useMemo } from 'react';
-import { Ingredient, MarketItem, ParsedIngredient } from '../types';
-import { IngredientRow } from './IngredientRow';
-import { AddIcon, PrintIcon, ResetIcon, ExcelIcon, InfoIcon, WandIcon } from './Icons';
-import { FormattedInput } from './FormattedInput';
-import { Tooltip } from './Tooltip';
-import { RecipeImporter } from './RecipeImporter';
+import { Ingredient, MarketItem, ParsedIngredient } from '../types.ts';
+import { IngredientRow } from './IngredientRow.tsx';
+import { AddIcon, PrintIcon, ResetIcon, ExcelIcon, InfoIcon, WandIcon } from './Icons.tsx';
+import { FormattedInput } from './FormattedInput.tsx';
+import { Tooltip } from './Tooltip.tsx';
+import { RecipeImporter } from './RecipeImporter.tsx';
 
 interface CostingTableProps {
   ingredients: Ingredient[];
