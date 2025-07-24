@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import ReactDOM from 'react-dom';
 import { GoogleGenAI, Type } from "@google/genai";
-import { CloseIcon, SpinnerIcon, WandIcon } from './Icons';
-import { ParsedIngredient } from '../types';
+import { CloseIcon, SpinnerIcon, WandIcon } from './Icons.tsx';
+import { ParsedIngredient } from '../types.ts';
 
 interface RecipeImporterProps {
   isOpen: boolean;
