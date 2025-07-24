@@ -1,6 +1,6 @@
 {
   "name": "Food Costing Calculator",
-  "description": "An intuitive web application to calculate food costs for recipes. It features a dynamic costing matrix, a manageable market list for ingredients, and automatically computes total costs and food cost percentages.",
+  "description": "An intuitive web application to calculate food costs for recipes. Use the AI-powered Recipe Importer to parse ingredients automatically. Features a dynamic costing matrix, a manageable market list, and computes total costs and food cost percentages.",
   "requestFramePermissions": [],
-  "prompt": ""
+  "prompt": "A web application for calculating food recipe costs. The user provides ingredients, quantities, and purchase prices. The app calculates total cost, cost per serving, and food cost percentage. It includes a market list for storing common ingredient prices. The app also features an AI-powered recipe importer."
 }
