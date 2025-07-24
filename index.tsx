@@ -329,7 +329,7 @@ function RecipeImporter({ isOpen, onClose, onImport }: RecipeImporterProps): Rea
           }
         }
       });
-      const parsedIngredients = JSON.parse(response.text) as ParsedIngredient[];
+      const parsedIngredients = JSON.parse(response.text);
       if (!parsedIngredients || parsedIngredients.length === 0) {
         throw new Error("The AI could not identify any ingredients. Please check your recipe text and try again.");
       }
