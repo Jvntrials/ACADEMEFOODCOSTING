@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { PotIcon } from './Icons';
+import { PotIcon } from './Icons.tsx';
 
 export function Header(): React.ReactNode {
     return (
