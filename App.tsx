@@ -1,10 +1,10 @@
 
 import React, { useState, useEffect } from 'react';
-import { CostingTable } from './components/CostingTable';
-import { MarketList } from './components/MarketList';
-import { Header } from './components/Header';
-import { Ingredient, MarketItem, ParsedIngredient } from './types';
-import { getMarketListFromStorage, saveMarketListToStorage } from './services/storageService';
+import { CostingTable } from './components/CostingTable.tsx';
+import { MarketList } from './components/MarketList.tsx';
+import { Header } from './components/Header.tsx';
+import { Ingredient, MarketItem, ParsedIngredient } from './types.ts';
+import { getMarketListFromStorage, saveMarketListToStorage } from './services/storageService.ts';
 
 const getConversionFactor = (purchaseUnit: string, recipeUnit: string): number => {
     const pUnit = purchaseUnit.toLowerCase();
