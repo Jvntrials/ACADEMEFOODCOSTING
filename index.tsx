@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { createRoot } from 'react-dom/client';
@@ -28,8 +27,19 @@ interface ParsedIngredient {
   unit:string;
 }
 
+interface SavedRecipe {
+    id: string;
+    name: string;
+    ingredients: Ingredient[];
+    sellingPrice: string;
+    recipeYield: string;
+    createdAt: string;
+}
+
+
 // From: services/storageService.ts
 const MARKET_LIST_KEY = 'foodCostingMarketList';
+const RECIPES_KEY = 'foodCostingRecipes';
 
 const getMarketListFromStorage = (): MarketItem[] => {
   try {
@@ -56,6 +66,27 @@ const saveMarketListToStorage = (marketList: MarketItem[]): void => {
   } catch (error) {
     console.error("Failed to save market list to localStorage", error);
   }
+};
+
+const getSavedRecipesFromStorage = (): SavedRecipe[] => {
+    try {
+        const rawData = localStorage.getItem(RECIPES_KEY);
+        if (rawData) {
+            return JSON.parse(rawData);
+        }
+    } catch (error) {
+        console.error("Failed to parse recipes from localStorage", error);
+    }
+    return [];
+};
+
+const saveRecipesToStorage = (recipes: SavedRecipe[]): void => {
+    try {
+        const data = JSON.stringify(recipes);
+        localStorage.setItem(RECIPES_KEY, data);
+    } catch (error) {
+        console.error("Failed to save recipes to localStorage", error);
+    }
 };
 
 // From: components/Icons.tsx
@@ -156,6 +187,19 @@ const SpinnerIcon = ({ className }: IconProps): React.ReactNode => (
   <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={`${className} animate-spin`}>
     <path d="M21 12a9 9 0 1 1-6.219-8.56" />
   </svg>
+);
+
+const SaveIcon = ({ className }: IconProps): React.ReactNode => (
+  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+    <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z" /><polyline points="17 21 17 13 7 13 7 21" /><polyline points="7 3 7 8 15 8" />
+  </svg>
+);
+
+const RecipeBookIcon = ({ className }: IconProps): React.ReactNode => (
+    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+        <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path>
+        <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"></path>
+    </svg>
 );
 
 
@@ -396,7 +440,7 @@ function RecipeImporter({ isOpen, onClose, onImport }: RecipeImporterProps): Rea
 // From: components/IngredientRow.tsx
 interface IngredientRowProps {
   ingredient: Ingredient;
-  onIngredientChange: (id: string, field: keyof Ingredient, value: string | number) => void;
+  onIngredientChange: (id: string, field: string, value: string | number) => void;
   onRemove: (id: string) => void;
   marketList: MarketItem[];
 }
@@ -421,7 +465,7 @@ function IngredientRow({ ingredient, onIngredientChange, onRemove, marketList }:
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
   
-  const handleInputChange = (field: keyof Ingredient, value: string | number) => {
+  const handleInputChange = (field: string, value: string | number) => {
     onIngredientChange(ingredient.id, field, value);
     if (field === 'name' && typeof value === 'string') {
       if (value.length > 0) {
@@ -577,7 +621,7 @@ function MarketList({ marketList, setMarketList }: MarketListProps): React.React
   };
 
   return (
-    <div className="bg-gray-800 p-4 sm:p-6 rounded-lg shadow-lg h-full flex flex-col">
+    <div className="p-4 sm:p-6 h-full flex flex-col">
       <div className="flex items-center gap-3 mb-4">
         <MarketIcon className="h-6 w-6 text-[#a1e540]" />
         <h3 className="text-xl font-semibold text-gray-100">Market List</h3>
@@ -631,7 +675,7 @@ declare var XLSX: any;
 
 interface CostingTableProps {
   ingredients: Ingredient[];
-  onIngredientChange: (id: string, field: keyof Ingredient, value: string | number) => void;
+  onIngredientChange: (id: string, field: string, value: string | number) => void;
   onAddIngredient: () => void;
   onRemoveIngredient: (id: string) => void;
   onReset: () => void;
@@ -642,6 +686,7 @@ interface CostingTableProps {
   recipeYield: string;
   onRecipeYieldChange: (value: string) => void;
   onImportIngredients: (ingredients: ParsedIngredient[]) => void;
+  onSaveRecipe: () => void;
 }
 
 const columnDescriptions = {
@@ -659,7 +704,7 @@ const pricingMethodDescriptions = {
   factorPricing: `Calculates the selling price by multiplying the total cost by a pricing factor. This is a quick way to set prices.\n\nFORMULA:\nSelling Price = Grand Total × Pricing Factor\n\nEXAMPLE:\nIf total cost is ₱30 and your factor is 3.33, the selling price is ₱30 × 3.33 = ₱99.90. (A factor of 3.33 equals a ~30% food cost).`,
 }
 
-function CostingTable({ ingredients, onIngredientChange, onAddIngredient, onRemoveIngredient, onReset, sellingPrice, onSellingPriceChange, marketList, onAddIngredientFromMarket, recipeYield, onRecipeYieldChange, onImportIngredients }: CostingTableProps): React.ReactNode {
+function CostingTable({ ingredients, onIngredientChange, onAddIngredient, onRemoveIngredient, onReset, sellingPrice, onSellingPriceChange, marketList, onAddIngredientFromMarket, recipeYield, onRecipeYieldChange, onImportIngredients, onSaveRecipe }: CostingTableProps): React.ReactNode {
   const [isDragOver, setIsDragOver] = useState(false);
   const [isImporterOpen, setIsImporterOpen] = useState(false);
   const [pricingMethod, setPricingMethod] = useState<'costPercentage' | 'factorPricing'>('costPercentage');
@@ -752,6 +797,7 @@ function CostingTable({ ingredients, onIngredientChange, onAddIngredient, onRemo
           <div className="flex gap-2 no-print flex-wrap">
             <button onClick={() => setIsImporterOpen(true)} className="flex items-center gap-2 bg-purple-600 text-white px-4 py-2 rounded-md hover:bg-purple-700 transition-colors text-sm font-bold"><WandIcon className="h-5 w-5" /> Import Recipe</button>
             <button onClick={onAddIngredient} className="flex items-center gap-2 bg-[#a1e540] text-black px-4 py-2 rounded-md hover:bg-[#8fcc38] transition-colors text-sm font-bold"><AddIcon className="h-5 w-5" /> Add Ingredient</button>
+            <button onClick={onSaveRecipe} className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors text-sm font-medium"><SaveIcon className="h-5 w-5" /> Save</button>
             <button onClick={handleExportExcel} className="flex items-center gap-2 bg-transparent border border-[#a1e540] text-[#a1e540] px-4 py-2 rounded-md hover:bg-[#a1e540] hover:text-black transition-colors text-sm font-medium"><ExcelIcon className="h-5 w-5" /> Export</button>
             <button onClick={onReset} className="flex items-center gap-2 bg-red-600 text-white px-4 py-2 rounded-md hover:bg-red-700 transition-colors text-sm font-medium"><ResetIcon className="h-5 w-5" /> Reset</button>
             <button onClick={handlePrint} className="flex items-center gap-2 bg-gray-700 text-gray-200 px-4 py-2 rounded-md hover:bg-gray-600 transition-colors text-sm font-medium"><PrintIcon className="h-5 w-5" /> Print</button>
@@ -833,6 +879,83 @@ function CostingTable({ ingredients, onIngredientChange, onAddIngredient, onRemo
   );
 }
 
+// ** NEW COMPONENT **
+const Tabs = ({ tabs, activeTab, setActiveTab }) => {
+    return (
+        <div className="flex border-b border-gray-700 flex-shrink-0">
+            {tabs.map(tab => (
+                <button
+                    key={tab.id}
+                    onClick={() => setActiveTab(tab.id)}
+                    className={`flex items-center gap-2 px-4 py-3 text-sm font-medium transition-colors w-1/2 justify-center
+                        ${activeTab === tab.id
+                            ? 'border-b-2 border-[#a1e540] text-white'
+                            : 'text-gray-400 hover:bg-gray-700/50 hover:text-white'
+                        }`}
+                >
+                    {tab.icon}
+                    {tab.label}
+                </button>
+            ))}
+        </div>
+    );
+};
+
+// ** NEW COMPONENT **
+interface RecipeManagerProps {
+    recipes: SavedRecipe[];
+    currentRecipeId: string | null;
+    onLoad: (id: string) => void;
+    onDelete: (id: string) => void;
+}
+
+function RecipeManager({ recipes, currentRecipeId, onLoad, onDelete }: RecipeManagerProps) {
+    return (
+        <div className="p-4 sm:p-6 h-full flex flex-col">
+            <div className="flex items-center gap-3 mb-4">
+                <RecipeBookIcon className="h-6 w-6 text-[#a1e540]" />
+                <h3 className="text-xl font-semibold text-gray-100">My Recipes</h3>
+            </div>
+            <p className="text-sm text-gray-400 mb-4">
+                Load a previously saved recipe or delete ones you no longer need.
+            </p>
+            <div className="space-y-3 max-h-[40vh] sm:max-h-[60vh] overflow-y-auto pr-2 flex-grow">
+                {recipes.length === 0 ? (
+                    <div className="text-center text-gray-500 py-10">
+                        <p>No saved recipes yet.</p>
+                        <p className="text-xs mt-1">Click the "Save" button in the Costing Matrix to get started.</p>
+                    </div>
+                ) : (
+                    [...recipes].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()).map(recipe => (
+                        <div key={recipe.id} className={`flex items-center gap-2 p-3 rounded-md transition-colors ${currentRecipeId === recipe.id ? 'bg-blue-900/50 ring-1 ring-blue-500' : 'bg-gray-900/50'}`}>
+                            <div className="flex-grow">
+                                <p className="font-medium text-gray-200">{recipe.name}</p>
+                                <p className="text-xs text-gray-500">Saved: {new Date(recipe.createdAt).toLocaleDateString()}</p>
+                            </div>
+                            <div className="flex items-center gap-2">
+                                <button
+                                    onClick={() => onLoad(recipe.id)}
+                                    className="px-3 py-1 text-sm rounded-md bg-gray-700 hover:bg-gray-600 transition-colors"
+                                    title="Load this recipe"
+                                >
+                                    Load
+                                </button>
+                                <button
+                                    onClick={() => onDelete(recipe.id)}
+                                    className="p-2 text-gray-500 hover:text-red-500 hover:bg-red-500/10 rounded-full transition-colors"
+                                    title="Delete this recipe"
+                                >
+                                    <TrashIcon className="h-5 w-5" />
+                                </button>
+                            </div>
+                        </div>
+                    ))
+                )}
+            </div>
+        </div>
+    );
+}
+
 
 // From: App.tsx
 const getConversionFactor = (purchaseUnit: string, recipeUnit: string): number => {
@@ -847,32 +970,37 @@ const getConversionFactor = (purchaseUnit: string, recipeUnit: string): number =
 };
 
 function App(): React.ReactNode {
-  const [ingredients, setIngredients] = useState<Ingredient[]>([
-    { id: '1', name: 'Flour', quantity: 1000, unit: 'g', purchasePrice: 80, purchaseUnit: 'kg', conversionFactor: 1000 },
-    { id: '2', name: 'Sugar', quantity: 500, unit: 'g', purchasePrice: 90, purchaseUnit: 'kg', conversionFactor: 1000 },
-    { id: '3', name: 'Eggs', quantity: 4, unit: 'pc', purchasePrice: 84, purchaseUnit: 'pc', conversionFactor: 12 },
-  ]);
+  const [ingredients, setIngredients] = useState<Ingredient[]>([]);
   const [marketList, setMarketList] = useState<MarketItem[]>(getMarketListFromStorage());
-  const [sellingPrice, setSellingPrice] = useState<string>('150');
-  const [recipeYield, setRecipeYield] = useState<string>('8');
+  const [sellingPrice, setSellingPrice] = useState<string>('0');
+  const [recipeYield, setRecipeYield] = useState<string>('1');
+  
+  // New state for recipe management
+  const [savedRecipes, setSavedRecipes] = useState<SavedRecipe[]>(getSavedRecipesFromStorage());
+  const [currentRecipeId, setCurrentRecipeId] = useState<string | null>(null);
+  const [activeRightPanelTab, setActiveRightPanelTab] = useState('market');
 
+  useEffect(() => { resetTable(); }, []); // Load with an empty table on first mount
   useEffect(() => { saveMarketListToStorage(marketList); }, [marketList]);
+  useEffect(() => { saveRecipesToStorage(savedRecipes); }, [savedRecipes]);
 
   useEffect(() => {
-    setIngredients(prevIngredients => {
-      const marketListMap = new Map(marketList.map(item => [item.name.trim().toLowerCase(), item]));
-      const newIngredients = prevIngredients.map(ing => {
-        const marketItem = ing.name ? marketListMap.get(ing.name.trim().toLowerCase()) : undefined;
-        if (marketItem && (ing.purchasePrice !== marketItem.price || ing.purchaseUnit !== marketItem.unit)) {
-          return { ...ing, purchasePrice: marketItem.price, purchaseUnit: marketItem.unit, conversionFactor: getConversionFactor(marketItem.unit, ing.unit) };
-        }
-        return ing;
-      });
-      return newIngredients.some((ing, i) => ing !== prevIngredients[i]) ? newIngredients : prevIngredients;
-    });
-  }, [marketList]);
+    if(!currentRecipeId) {
+        setIngredients(prevIngredients => {
+          const marketListMap = new Map(marketList.map(item => [item.name.trim().toLowerCase(), item]));
+          const newIngredients = prevIngredients.map(ing => {
+            const marketItem = ing.name ? marketListMap.get(ing.name.trim().toLowerCase()) : undefined;
+            if (marketItem && (ing.purchasePrice !== marketItem.price || ing.purchaseUnit !== marketItem.unit)) {
+              return { ...ing, purchasePrice: marketItem.price, purchaseUnit: marketItem.unit, conversionFactor: getConversionFactor(marketItem.unit, ing.unit) };
+            }
+            return ing;
+          });
+          return newIngredients.some((ing, i) => JSON.stringify(ing) !== JSON.stringify(prevIngredients[i])) ? newIngredients : prevIngredients;
+        });
+    }
+  }, [marketList, currentRecipeId]);
 
-  const handleIngredientChange = (id: string, field: keyof Ingredient, value: string | number) => {
+  const handleIngredientChange = (id: string, field: string, value: string | number) => {
     setIngredients(prev => prev.map(ing => {
         if (ing.id !== id) return ing;
         const updatedIng = { ...ing, [field]: value };
@@ -902,7 +1030,10 @@ function App(): React.ReactNode {
             purchasePrice: marketItem?.price || 0, purchaseUnit, conversionFactor: getConversionFactor(purchaseUnit, normalizedRecipeUnit),
         };
     });
-    if (newIngredients.length > 0) setIngredients(newIngredients);
+    if (newIngredients.length > 0) {
+        setIngredients(newIngredients);
+        setCurrentRecipeId(null); // Imported recipe is a new, unsaved recipe
+    }
     else console.warn("AI parsing resulted in an empty ingredient list.");
   };
 
@@ -932,7 +1063,62 @@ function App(): React.ReactNode {
      setIngredients([{ id: new Date().getTime().toString(), name: '', quantity: 1, unit: 'g', purchasePrice: 0, purchaseUnit: 'kg', conversionFactor: 1000 }]);
      setSellingPrice('0');
      setRecipeYield('1');
+     setCurrentRecipeId(null);
   };
+
+  const handleSaveRecipe = () => {
+    const existingRecipe = currentRecipeId ? savedRecipes.find(r => r.id === currentRecipeId) : null;
+    const recipeName = prompt("Enter a name for this recipe:", existingRecipe?.name || "");
+
+    if (recipeName) {
+        if(existingRecipe) { // Update existing recipe
+            const updatedRecipes = savedRecipes.map(r => r.id === currentRecipeId ? {
+                ...r,
+                name: recipeName,
+                ingredients: ingredients,
+                sellingPrice: sellingPrice,
+                recipeYield: recipeYield,
+                createdAt: new Date().toISOString()
+            } : r);
+            setSavedRecipes(updatedRecipes);
+        } else { // Save new recipe
+            const newRecipe: SavedRecipe = {
+                id: new Date().getTime().toString(),
+                name: recipeName,
+                ingredients: ingredients,
+                sellingPrice: sellingPrice,
+                recipeYield: recipeYield,
+                createdAt: new Date().toISOString()
+            };
+            setSavedRecipes([...savedRecipes, newRecipe]);
+            setCurrentRecipeId(newRecipe.id);
+        }
+    }
+  };
+
+  const handleLoadRecipe = (id: string) => {
+    const recipeToLoad = savedRecipes.find(r => r.id === id);
+    if (recipeToLoad) {
+        setIngredients(recipeToLoad.ingredients);
+        setSellingPrice(recipeToLoad.sellingPrice);
+        setRecipeYield(recipeToLoad.recipeYield);
+        setCurrentRecipeId(recipeToLoad.id);
+    }
+  };
+
+  const handleDeleteRecipe = (id: string) => {
+    if (confirm("Are you sure you want to delete this recipe?")) {
+        setSavedRecipes(savedRecipes.filter(r => r.id !== id));
+        if (currentRecipeId === id) {
+            resetTable();
+        }
+    }
+  };
+  
+  const rightPanelTabs = [
+    { id: 'market', label: 'Market List', icon: <MarketIcon className="h-5 w-5" /> },
+    { id: 'recipes', label: 'My Recipes', icon: <RecipeBookIcon className="h-5 w-5" /> }
+  ];
 
   return (
     <div className="bg-gray-900 min-h-screen font-sans text-gray-300">
@@ -940,9 +1126,17 @@ function App(): React.ReactNode {
       <main className="p-4 sm:p-6 lg:p-8">
         <div className="flex flex-col lg:flex-row gap-8">
           <div className="flex-grow lg:w-2/3 printable-area">
-             <CostingTable ingredients={ingredients} onIngredientChange={handleIngredientChange} onAddIngredient={addIngredient} onRemoveIngredient={removeIngredient} onReset={resetTable} sellingPrice={sellingPrice} onSellingPriceChange={setSellingPrice} marketList={marketList} onAddIngredientFromMarket={addIngredientFromMarket} recipeYield={recipeYield} onRecipeYieldChange={setRecipeYield} onImportIngredients={handleImportedIngredients} />
+             <CostingTable ingredients={ingredients} onIngredientChange={handleIngredientChange} onAddIngredient={addIngredient} onRemoveIngredient={removeIngredient} onReset={resetTable} sellingPrice={sellingPrice} onSellingPriceChange={setSellingPrice} marketList={marketList} onAddIngredientFromMarket={addIngredientFromMarket} recipeYield={recipeYield} onRecipeYieldChange={setRecipeYield} onImportIngredients={handleImportedIngredients} onSaveRecipe={handleSaveRecipe}/>
           </div>
-          <div className="lg:w-1/3 no-print"><MarketList marketList={marketList} setMarketList={setMarketList} /></div>
+          <div className="lg:w-1/3 no-print">
+            <div className="bg-gray-800 rounded-lg shadow-lg h-full flex flex-col">
+                <Tabs tabs={rightPanelTabs} activeTab={activeRightPanelTab} setActiveTab={setActiveRightPanelTab} />
+                <div className="flex-grow">
+                    {activeRightPanelTab === 'market' && <MarketList marketList={marketList} setMarketList={setMarketList} />}
+                    {activeRightPanelTab === 'recipes' && <RecipeManager recipes={savedRecipes} currentRecipeId={currentRecipeId} onLoad={handleLoadRecipe} onDelete={handleDeleteRecipe} />}
+                </div>
+            </div>
+          </div>
         </div>
       </main>
       <footer className="text-center py-6 text-gray-500 text-sm no-print">All rights reserved for Jovan Y.</footer>
