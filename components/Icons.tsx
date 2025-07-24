@@ -80,3 +80,21 @@ export const InfoIcon = ({ className }: IconProps): React.ReactNode => (
         <path d="M12 8h.01"></path>
     </svg>
 );
+
+export const WandIcon = ({ className }: IconProps): React.ReactNode => (
+  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+    <path d="M15 4V2" /><path d="M15 16v-2" /><path d="M8 9h2" /><path d="M20 9h2" /><path d="M17.5 6.5 19 5" /><path d="m5 19 1-1" /><path d="M3 3 21 21" /><path d="M17.5 17.5 19 19" /><path d="m5 5 1 1" /><path d="m2 15 2 2" /><path d="M18 22l2-2" />
+  </svg>
+);
+
+export const CloseIcon = ({ className }: IconProps): React.ReactNode => (
+  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+    <path d="M18 6 6 18" /><path d="m6 6 12 12" />
+  </svg>
+);
+
+export const SpinnerIcon = ({ className }: IconProps): React.ReactNode => (
+  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={`${className} animate-spin`}>
+    <path d="M21 12a9 9 0 1 1-6.219-8.56" />
+  </svg>
+);
