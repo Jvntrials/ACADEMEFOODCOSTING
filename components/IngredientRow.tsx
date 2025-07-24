@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Ingredient, MarketItem } from '../types';
-import { TrashIcon } from './Icons';
-import { FormattedInput } from './FormattedInput';
+import { Ingredient, MarketItem } from '../types.ts';
+import { TrashIcon } from './Icons.tsx';
+import { FormattedInput } from './FormattedInput.tsx';
 
 interface IngredientRowProps {
   ingredient: Ingredient;
