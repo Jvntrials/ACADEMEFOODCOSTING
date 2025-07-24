@@ -282,7 +282,7 @@ const TooltipContent = ({ text, coords }: { text: string; coords: { top: number;
 const Tooltip = ({ children, text }: TooltipProps): React.ReactNode => {
   const [isVisible, setIsVisible] = useState(false);
   const [coords, setCoords] = useState({ top: 0, left: 0 });
-  const triggerRef = useRef<HTMLSpanElement>(null);
+  const triggerRef = useRef(null);
 
   const handleMouseEnter = () => {
     if (triggerRef.current) {
@@ -331,7 +331,7 @@ interface RecipeImporterProps {
 function RecipeImporter({ isOpen, onClose, onImport }: RecipeImporterProps): React.ReactNode {
   const [recipeText, setRecipeText] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
     if (isOpen) {
@@ -448,9 +448,9 @@ interface IngredientRowProps {
 const unitOptions = ['g', 'kg', 'ml', 'liter', 'pc', 'pcs'];
 
 function IngredientRow({ ingredient, onIngredientChange, onRemove, marketList }: IngredientRowProps): React.ReactNode {
-  const [suggestions, setSuggestions] = useState<MarketItem[]>([]);
+  const [suggestions, setSuggestions] = useState([]);
   const [isFocused, setIsFocused] = useState(false);
-  const wrapperRef = useRef<HTMLTableCellElement>(null);
+  const wrapperRef = useRef(null);
   
   const unitCost = ingredient.conversionFactor > 0 ? ingredient.purchasePrice / ingredient.conversionFactor : 0;
   const extensionCost = unitCost * ingredient.quantity;
@@ -508,7 +508,7 @@ function IngredientRow({ ingredient, onIngredientChange, onRemove, marketList }:
         </div>
         {isFocused && suggestions.length > 0 && (
           <ul className="absolute z-20 w-full bg-gray-900 ring-1 ring-gray-700 rounded-md mt-1 max-h-48 overflow-y-auto shadow-lg">
-            {suggestions.map(item => (
+            {suggestions.map((item: MarketItem) => (
               <li key={item.id} className="px-3 py-2 cursor-pointer hover:bg-[#a1e540] hover:text-black" onMouseDown={() => handleSuggestionClick(item)}>
                 <div className="flex justify-between items-center">
                     <span className="font-medium">{item.name}</span>
@@ -567,9 +567,9 @@ interface MarketListProps {
 }
 
 function MarketList({ marketList, setMarketList }: MarketListProps): React.ReactNode {
-  const dragItem = useRef<number | null>(null);
-  const dragOverItem = useRef<number | null>(null);
-  const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
+  const dragItem = useRef(null);
+  const dragOverItem = useRef(null);
+  const [draggedIndex, setDraggedIndex] = useState(null);
 
   const handlePriceChange = (id: string, newPrice: number) => {
     setMarketList(marketList.map(item => (item.id === id ? { ...item, price: newPrice } : item)));
@@ -970,14 +970,14 @@ const getConversionFactor = (purchaseUnit: string, recipeUnit: string): number =
 };
 
 function App(): React.ReactNode {
-  const [ingredients, setIngredients] = useState<Ingredient[]>([]);
-  const [marketList, setMarketList] = useState<MarketItem[]>(getMarketListFromStorage());
-  const [sellingPrice, setSellingPrice] = useState<string>('0');
-  const [recipeYield, setRecipeYield] = useState<string>('1');
+  const [ingredients, setIngredients] = useState([]);
+  const [marketList, setMarketList] = useState(getMarketListFromStorage());
+  const [sellingPrice, setSellingPrice] = useState('0');
+  const [recipeYield, setRecipeYield] = useState('1');
   
   // New state for recipe management
-  const [savedRecipes, setSavedRecipes] = useState<SavedRecipe[]>(getSavedRecipesFromStorage());
-  const [currentRecipeId, setCurrentRecipeId] = useState<string | null>(null);
+  const [savedRecipes, setSavedRecipes] = useState(getSavedRecipesFromStorage());
+  const [currentRecipeId, setCurrentRecipeId] = useState(null);
   const [activeRightPanelTab, setActiveRightPanelTab] = useState('market');
 
   useEffect(() => { resetTable(); }, []); // Load with an empty table on first mount
